@@ -56,7 +56,7 @@ class OceanWatcher(DaemonThread):
         verifyout = self.ocean.validateaddress(self.outaddress)
         if not verifyout["isvalid"]:
             self.logger.error("\nPayment address is invalid")
-            sys.exit(1)            
+            sys.exit(1)
 
     def run(self):
         while not self.stopped():
@@ -65,14 +65,47 @@ class OceanWatcher(DaemonThread):
 
             blockinfo = self.ocean.getblockchaininfo()
 
-            if blockinfo["blocks"] % self.con_interval == 0:
-                # get full balance
-                winfo = self.ocean.getwalletinfo()
-                total = sum(winfo["balance"].values())
-                # send to out address
-                txid = self.ocean.sendtoaddress(self.outaddress,total,"","",True)
+            print("checkblock "+str(blockinfo["blocks"]))
 
-                self.logger.info("Sent consolodation: "+tx["txid"]+" Amount: "+str(total))
+            if blockinfo["blocks"] % self.con_interval == 0:
+                print("consolodate")
+                # get full balance of inaddress
+                unspent = self.ocean.listunspent()
+                assets = {}
+                outpoints = []
+                total = 0.0
+                print(self.inaddress)
+                for output in unspent:
+                    try:
+                        oaddress = output["address"]
+                    except:
+                        oaddress = None
+                    if oaddress == self.inaddress: 
+                        print("match")
+                        try:
+                            assets[output["asset"]] = assets[output["asset"]] + output["amount"]
+                        except:
+                            assets[output["asset"]] = output["amount"]
+                        total += float(output["amount"])
+                        outpoints.append({"txid":output["txid"],"vout":output["vout"]})
+                outputs = []
+                for asset, amt in assets.items():
+                    outp = {"address":self.outaddress, "asset":asset, "amount":amt}
+                    outputs.append(outp)
+
+                print("inputs")
+                print(outpoints)
+                print("outputs")
+                print(outputs)
+
+                # send to out address
+                if len(outpoints) > 0:
+                    tx_us = self.ocean.createrawtxoutputs(outpoints,outputs)
+                    tx_s = self.ocean.signrawtransaction(tx_us)
+                    txid = self.ocean.sendrawtransaction(tx_s["hex"])
+
+                    self.logger.info("Sent consolodation: "+tx["txid"]+" Amount: "+str(total))
+                    print("Sent consolodation: "+txid+" Amount: "+str(total))
                 
             elapsed_time = time() - start_time
             sleep(WATCH_INTERVAL / 2 - (elapsed_time if elapsed_time < WATCH_INTERVAL / 2 else 0))

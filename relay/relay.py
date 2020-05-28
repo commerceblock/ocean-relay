@@ -21,9 +21,9 @@ def parse_args():
     parser.add_argument('--rpcport', required=True, type=str, help="Client RPC port")
     parser.add_argument('--rpcuser', required=True, type=str, help="RPC username for client")
     parser.add_argument('--rpcpassword', required=True, type=str, help="RPC password for client")
-    parser.add_argument('--in', required=True, type=str, help="The recieve address to consolodate payments from")
+    parser.add_argument('--inaddress', required=True, type=str, help="The recieve address to consolodate payments from")
 
-    parser.add_argument('--out',required=True, type=str, help="The address to send incoming payments to")
+    parser.add_argument('--outaddress',required=True, type=str, help="The address to send incoming payments to")
     parser.add_argument('--privkey', required=True, type=str, help="The private key for the recieve address")
 
     parser.add_argument('--interval', default=10080, type=int, help="Consolodation interval (in blocks)")
@@ -42,16 +42,16 @@ def main():
     conf["rpcpassword"] = args.rpcpassword
     conf["rpcport"] = args.rpcport
     conf["rpcconnect"] = args.rpconnect
-    conf["in"] = args.inaddress
+    conf["inaddress"] = args.inaddress
 
     pvk = args.privkey
     conf["privkey"] = pvk
-    conf["out"] = args.outaddress
+    conf["outaddress"] = args.outaddress
     conf["interval"] = args.interval
 
     signer = None
-    if args.hsm:
-        signer = HsmPkcs11(os.environ['KEY_LABEL'])
+#    if args.hsm:
+#        signer = HsmPkcs11(os.environ['KEY_LABEL'])
 
     ocean_watch = OceanWatcher(conf, signer)
     ocean_watch.start()
